@@ -6,8 +6,8 @@
 ### Up and Run
 
 ```sh
-git clone https://github.com/fcitil/Company_Data_Analysis.git
-cd Company_Data_Analysis
+git clone https://github.com/fcitil/Data-Analysis-with-RabbitMQ-Celery-FastAPI.git
+cd Data-Analysis-with-RabbitMQ-Celery-FastAPI
 docker-compose up -d
 ```
 
