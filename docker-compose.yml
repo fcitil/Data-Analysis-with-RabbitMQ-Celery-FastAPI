@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  web:
+    build: .
+    ports:
+      - 8001:8000
+      - 5556:5555
+    volumes:
+      - .:/app
+    depends_on:
+      - rabbitmq
+      - mongodb
+    networks:
+      - data_network
+    environment:
+      - GOOGLE_API_KEY=AIzaSyCWTHn_G2s_8zYZ6eWYOWRGgAHVWO8FtKQ
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - data_network
+
+  mongodb:
+    image: mongo:4.4
+    container_name: mongodb
+    hostname: mongodb
+    ports:
+      - 27017:27017
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASS}
+      MONGO_INITDB_DATABASE: ${MONGODB_DB}
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - data_network
+
+volumes:
+  rabbitmq_data:
+  mongodb_data:
+
+networks:
+  data_network:
+    driver: bridge

@@ -1,0 +1,11 @@
+fastapi==0.110.2
+celery==5.4.0
+flower==2.0.1
+uvicorn==0.29.0
+pymongo==4.7.0
+requests==2.31.0
+tqdm==4.66.2
+pandas==2.2.2
+scikit-learn==1.4.2
+google-generativeai==0.5.2
+vertexai==1.48.0
