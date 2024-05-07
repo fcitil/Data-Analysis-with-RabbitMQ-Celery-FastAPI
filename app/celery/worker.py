@@ -4,6 +4,9 @@ from string import ascii_lowercase
 # from celery import Celery
 from .app import celery_app
 
+import google.generativeai as genai
+from google.api_core import retry
+
 @celery_app.task(name="search_companies")
 def search_companies(tosearch):
     url = "https://ranking.glassdollar.com/graphql"
@@ -42,3 +45,15 @@ def get_company_data(id):
     url = "https://ranking.glassdollar.com/graphql"
     response = requests.post(url, json=payload)
     return response.json()
+
+@celery_app.task(name="make_embed_text_fn")
+def make_embed_text_fn(model):
+    @retry.Retry(timeout=300.0)
+    def embed_fn(text: str) -> list[float]:
+        # Set the task_type to CLUSTERING.
+        embedding = genai.embed_content(model=model,
+                                        content=text,
+                                        task_type="clustering")
+        return embedding["embedding"]
+
+    return embed_fn

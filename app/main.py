@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Body, BackgroundTasks
-from .celery.worker import search_companies, get_company_data
+from .celery.worker import search_companies, get_company_data, make_embed_text_fn
 from fastapi.responses import JSONResponse
 from string import ascii_lowercase
 import time
@@ -7,9 +7,9 @@ import tqdm
 import numpy as np
 import pandas as pd
 import os
+
 import google.generativeai as genai
 import google.ai.generativelanguage as glm
-
 from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans
 from google.api_core import retry
@@ -100,22 +100,35 @@ def analysis(data):
 
     tqdm.pandas()
 
-    def make_embed_text_fn(model):
+    # def make_embed_text_fn(model):
 
-        @retry.Retry(timeout=300.0)
-        def embed_fn(text: str) -> list[float]:
-            # Set the task_type to CLUSTERING.
-            embedding = genai.embed_content(model=model,
-                                            content=text,
-                                            task_type="clustering")
-            return embedding["embedding"]
+    #     @retry.Retry(timeout=300.0)
+    #     def embed_fn(text: str) -> list[float]:
+    #         # Set the task_type to CLUSTERING.
+    #         embedding = genai.embed_content(model=model,
+    #                                         content=text,
+    #                                         task_type="clustering")
+    #         return embedding["embedding"]
+    #     return embed_fn
+    embedding_tasks = []
+    cnt = 0
+    def get_embeddings(model, embed_tasks):
+        global cnt
+        embed_tasks.append(make_embed_text_fn.delay(model))
+        cnt += 1
+        print("added task", cnt)
+        # return make_embed_text_fn.delay(model)
 
-        return embed_fn
-
-    def create_embeddings(df):
+    def create_embeddings(df,embed_tasks=embedding_tasks):
         model = 'models/embedding-001'
-        df['Embeddings'] = df['description_extended'].progress_apply(make_embed_text_fn(model))
+        df['Embeddings'] = df['description_extended'].progress_apply(get_embeddings(model, embedding_tasks))
         return df
+    
+    # check if the task in make_embed_text_fn is done
+    while True:
+        if all([embedding_task.ready() for embedding_task in embedding_tasks]):
+            break
+        time.sleep(3)
 
     df_clustring = create_embeddings(df_companies)
 
